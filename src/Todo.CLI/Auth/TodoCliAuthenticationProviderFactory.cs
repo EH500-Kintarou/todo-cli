@@ -5,6 +5,7 @@ namespace Todo.CLI.Auth;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
 using Microsoft.Kiota.Abstractions.Authentication;
+using System.Linq;
 
 static class TodoCliAuthenticationProviderFactory
 {
@@ -19,9 +20,17 @@ static class TodoCliAuthenticationProviderFactory
 
         TokenCacheHelper.EnableSerialization(app.UserTokenCache);
 
-        var login = app.AcquireTokenInteractive(config.Scopes).WithPrompt(Prompt.NoPrompt).ExecuteAsync()
-            .GetAwaiter().GetResult();
-        var token = login.AccessToken;
+		var accounts = app.GetAccountsAsync().GetAwaiter().GetResult();
+		AuthenticationResult login;
+		try {
+			login = app.AcquireTokenSilent(config.Scopes, accounts.FirstOrDefault()).ExecuteAsync()
+				.GetAwaiter().GetResult();
+		}
+		catch(MsalUiRequiredException) {
+			login = app.AcquireTokenInteractive(config.Scopes).WithPrompt(Prompt.NoPrompt).ExecuteAsync()
+				.GetAwaiter().GetResult();
+		}
+		var token = login.AccessToken;
 
         return new ApiKeyAuthenticationProvider("Bearer " + token, "Authorization",
             ApiKeyAuthenticationProvider.KeyLocation.Header);
