@@ -10,5 +10,5 @@ public class TodoItem
     public string? ListId { get; set; }
 
     public override string ToString() => $"{Subject} - {Status} {(IsCompleted ? Completed?.ToString("yyyy-MM-dd") : string.Empty)}";
-    public string ToString(bool noStatus) => noStatus ? Subject : ToString();
+    public string ToString(bool noStatus) => noStatus ? (Subject ?? "") : ToString();
 }

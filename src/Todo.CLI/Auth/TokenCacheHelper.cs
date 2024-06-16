@@ -1,5 +1,6 @@
 ﻿using Microsoft.Identity.Client;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Todo.CLI.Auth;
@@ -24,11 +25,13 @@ static class TokenCacheHelper
     {
         lock (FileLock)
         {
-            args.TokenCache.DeserializeMsalV3(File.Exists(CacheFilePath)
-                ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath),
-                    null,
-                    DataProtectionScope.CurrentUser)
-                : null);
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {   // ProtectedData.Unprotect is only supported by Windows OS
+				args.TokenCache.DeserializeMsalV3(File.Exists(CacheFilePath)
+                    ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath),
+                        null,
+                        DataProtectionScope.CurrentUser)
+                    : null);
+            }
         }
     }
 
@@ -39,12 +42,14 @@ static class TokenCacheHelper
         {
             lock (FileLock)
             {
-                // reflect changesgs in the persistent store
-                File.WriteAllBytes(CacheFilePath,
+				// reflect changesgs in the persistent store
+				if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {   // ProtectedData.Protect is only supported by Windows OS
+					File.WriteAllBytes(CacheFilePath,
                     ProtectedData.Protect(args.TokenCache.SerializeMsalV3(),
                         null,
                         DataProtectionScope.CurrentUser)
-                );
+                    );
+                }
             }
         }
     }
